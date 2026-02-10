@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #FF6B35;
+  --color-secondary: #4CAF50;
+  --color-accent: #FFC107;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+}
+
+.glass {
+  backdrop-filter: saturate(180%) blur(12px);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.blur-placeholder {
+  filter: blur(20px);
+}
