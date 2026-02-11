@@ -3,7 +3,7 @@ export type Category = {
   name: string;
   slug: string;
   icon: string | null;
-  order: number;
+  sort_order: number;
   created_at: string;
 };
 
@@ -16,7 +16,7 @@ export type Dish = {
   image_url: string | null;
   available: boolean;
   featured: boolean;
-  order: number;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 };

@@ -8,7 +8,7 @@ export default function CategoriesManager() {
   const [items, setItems] = useState<Category[]>([]);
   const [name, setName] = useState("");
   useEffect(() => {
-    supabase.from("categories").select("*").order("order", { ascending: true }).then(({ data }) => setItems(data || []));
+    supabase.from("categories").select("*").order("sort_order", { ascending: true }).then(({ data }) => setItems(data || []));
   }, []);
   const move = async (index: number, dir: -1 | 1) => {
     const newIdx = index + dir;
@@ -16,14 +16,18 @@ export default function CategoriesManager() {
     const copy = [...items];
     [copy[index], copy[newIdx]] = [copy[newIdx], copy[index]];
     setItems(copy);
-    await Promise.all(copy.map((c, i) => supabase.from("categories").update({ order: i }).eq("id", c.id)));
+    await Promise.all(copy.map((c, i) => supabase.from("categories").update({ sort_order: i }).eq("id", c.id)));
   };
   const add = async () => {
     if (!name.trim()) return;
     const slug = name.toLowerCase().replace(/\s+/g, "-");
-    const { data } = await supabase.from("categories").insert({ name, slug, order: items.length }).select("*").single();
-    if (data) setItems((x) => [...x, data as Category]);
-    setName("");
+    const { data, error } = await supabase.from("categories").insert({ name, slug, sort_order: items.length }).select("*").single();
+    if (data) {
+      setItems((x) => [...x, data as Category]);
+      setName("");
+    } else if (error) {
+      console.error(error);
+    }
   };
   const remove = async (id: string) => {
     await supabase.from("categories").delete().eq("id", id);

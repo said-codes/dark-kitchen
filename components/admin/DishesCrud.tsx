@@ -28,8 +28,13 @@ export default function DishesCrud() {
   const [editing, setEditing] = useState<Partial<Dish> | null>(null);
   const { notify } = useToast();
   useEffect(() => {
-    supabase.from("categories").select("*").order("order", { ascending: true }).then(({ data }) => setCats(data || []));
-    supabase.from("dishes").select("*").order("order", { ascending: true }).then(({ data }) => setItems(data || []));
+    const fetchData = async () => {
+      const { data: categories } = await supabase.from("categories").select("*").order("sort_order", { ascending: true });
+      setCats(categories || []);
+      const { data: dishes } = await supabase.from("dishes").select("*").order("sort_order", { ascending: true });
+      setItems(dishes || []);
+    };
+    fetchData();
   }, []);
   const onSave = async () => {
     try {
@@ -42,15 +47,35 @@ export default function DishesCrud() {
         image_url: editing?.image_url ?? null,
         available: Boolean(editing?.available ?? true),
         featured: Boolean(editing?.featured ?? false),
-        order: Number(editing?.order || 0)
+        order: Number(editing?.sort_order || 0)
       });
-      const { error } = await supabase.from("dishes").upsert(parsed, { onConflict: "id" });
+      // Map 'order' from Zod schema to 'sort_order' for DB
+      const payload = { 
+        ...parsed, 
+        sort_order: parsed.order,
+      };
+      // remove 'order' property if it exists in payload to avoid confusion, though extra props are usually ignored if not in strict mode. 
+      // But safer to construct exact payload.
+      const dbPayload = {
+        id: parsed.id,
+        name: parsed.name,
+        description: parsed.description,
+        price: parsed.price,
+        category_id: parsed.category_id,
+        image_url: parsed.image_url,
+        available: parsed.available,
+        featured: parsed.featured,
+        sort_order: parsed.order
+      };
+      
+      const { error } = await supabase.from("dishes").upsert(dbPayload, { onConflict: "id" });
       if (error) throw error;
       notify({ message: "Guardado", type: "success" });
       setOpen(false);
-      const { data } = await supabase.from("dishes").select("*").order("order", { ascending: true });
+      const { data } = await supabase.from("dishes").select("*").order("sort_order", { ascending: true });
       setItems(data || []);
     } catch (e) {
+      console.error(e);
       notify({ message: "Datos inválidos", type: "error" });
     }
   };
@@ -65,7 +90,7 @@ export default function DishesCrud() {
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Platillos</h2>
-        <Button onClick={() => { setEditing({ available: true, featured: false, order: 0 }); setOpen(true); }}>Nuevo</Button>
+        <Button onClick={() => { setEditing({ available: true, featured: false, sort_order: 0 }); setOpen(true); }}>Nuevo</Button>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((d) => (
@@ -107,7 +132,7 @@ export default function DishesCrud() {
               Destacado
             </label>
           </div>
-          <Input id="order" type="number" label="Orden" value={String(editing?.order ?? 0)} onChange={(e) => setEditing({ ...editing!, order: Number(e.target.value) })} />
+          <Input id="order" type="number" label="Orden" value={String(editing?.sort_order ?? 0)} onChange={(e) => setEditing({ ...editing!, sort_order: Number(e.target.value) })} />
           <ImageUpload bucket="dish-images" onUploaded={(url) => setEditing({ ...editing!, image_url: url })} />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>

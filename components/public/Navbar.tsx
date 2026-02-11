@@ -14,7 +14,7 @@ export default function Navbar() {
   return (
     <header className={`fixed inset-x-0 top-0 z-40 ${scrolled ? "glass" : "bg-transparent"}`}>
       <nav className="mx-auto flex max-w-6xl items-center justify-between p-4">
-        <Link href="/" className="text-lg font-bold">Curumaní Cocina</Link>
+        <Link href="/" className="text-lg font-bold">Dark Kitchen Curumaní</Link>
         <div className="flex items-center gap-3">
           <Link href="/#menu" className="text-sm">Menú</Link>
           <Link href="/#galeria" className="text-sm">Galería</Link>

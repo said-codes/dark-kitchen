@@ -1,97 +1,105 @@
+
+-- Enable necessary extensions
+create extension if not exists "uuid-ossp";
+
 -- Tables
-create table if not exists public.categories (
-  id uuid primary key default gen_random_uuid(),
+create table if not exists categories (
+  id uuid default gen_random_uuid() primary key,
   name text not null,
-  slug text not null unique,
-  icon text,
-  sort_order int not null default 0,
-  created_at timestamptz not null default now()
+  slug text,
+  sort_order int default 0,
+  created_at timestamptz default now()
 );
 
-create table if not exists public.dishes (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  description text not null,
-  price numeric not null check (price >= 0),
-  category_id uuid references public.categories(id) on delete set null,
-  image_url text,
-  available boolean not null default true,
-  featured boolean not null default false,
-  sort_order int not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create or replace function public.set_updated_at()
-returns trigger as $$
+-- Migration for existing tables using "order"
+do $$
 begin
-  new.updated_at = now();
-  return new;
-end;$$ language plpgsql;
+  if exists(select 1 from information_schema.columns where table_name = 'categories' and column_name = 'order') then
+    alter table categories rename column "order" to sort_order;
+  end if;
+end $$;
 
-drop trigger if exists dishes_updated_at on public.dishes;
-create trigger dishes_updated_at before update on public.dishes for each row execute procedure public.set_updated_at();
+create table if not exists dishes (
+  id uuid default gen_random_uuid() primary key,
+  category_id uuid references categories(id),
+  name text not null,
+  description text,
+  price decimal not null,
+  image_url text,
+  available boolean default true,
+  featured boolean default false,
+  sort_order int default 0,
+  created_at timestamptz default now()
+);
 
-create table if not exists public.site_settings (
+-- Migration for dishes
+do $$
+begin
+  if exists(select 1 from information_schema.columns where table_name = 'dishes' and column_name = 'order') then
+    alter table dishes rename column "order" to sort_order;
+  end if;
+end $$;
+
+create table if not exists gallery_items (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  description text,
+  price decimal,
+  image_url text not null,
+  created_at timestamptz default now()
+);
+
+create table if not exists site_settings (
   key text primary key,
-  value jsonb not null default '{}',
-  updated_at timestamptz not null default now()
+  value jsonb,
+  updated_at timestamptz default now()
 );
-
-create table if not exists public.business_hours (
-  id uuid primary key default gen_random_uuid(),
-  day_of_week int not null check (day_of_week between 0 and 6),
-  open_time text,
-  close_time text,
-  is_closed boolean not null default false
-);
-
--- RLS
-alter table public.categories enable row level security;
-alter table public.dishes enable row level security;
-alter table public.site_settings enable row level security;
-alter table public.business_hours enable row level security;
-
--- Policies: public read
-create policy "Public read categories" on public.categories for select using (true);
-create policy "Public read dishes" on public.dishes for select using (true);
-create policy "Public read settings" on public.site_settings for select using (true);
-create policy "Public read hours" on public.business_hours for select using (true);
-
--- Policies: authenticated write
-create policy "Auth write categories" on public.categories for insert with check (auth.uid() is not null);
-create policy "Auth update categories" on public.categories for update using (auth.uid() is not null);
-create policy "Auth delete categories" on public.categories for delete using (auth.uid() is not null);
-
-create policy "Auth write dishes" on public.dishes for insert with check (auth.uid() is not null);
-create policy "Auth update dishes" on public.dishes for update using (auth.uid() is not null);
-create policy "Auth delete dishes" on public.dishes for delete using (auth.uid() is not null);
-
-create policy "Auth write settings" on public.site_settings for insert with check (auth.uid() is not null);
-create policy "Auth update settings" on public.site_settings for update using (auth.uid() is not null);
-create policy "Auth delete settings" on public.site_settings for delete using (auth.uid() is not null);
-
-create policy "Auth write hours" on public.business_hours for insert with check (auth.uid() is not null);
-create policy "Auth update hours" on public.business_hours for update using (auth.uid() is not null);
-create policy "Auth delete hours" on public.business_hours for delete using (auth.uid() is not null);
 
 -- Storage buckets
-insert into storage.buckets (id, name, public) values ('dish-images', 'dish-images', true)
-on conflict (id) do nothing;
-insert into storage.buckets (id, name, public) values ('gallery', 'gallery', true)
-on conflict (id) do nothing;
-insert into storage.buckets (id, name, public) values ('assets', 'assets', true)
-on conflict (id) do nothing;
+insert into storage.buckets (id, name, public) values ('menu', 'menu', true) on conflict do nothing;
+insert into storage.buckets (id, name, public) values ('assets', 'assets', true) on conflict do nothing;
+insert into storage.buckets (id, name, public) values ('gallery', 'gallery', true) on conflict do nothing;
+insert into storage.buckets (id, name, public) values ('dish-images', 'dish-images', true) on conflict do nothing;
 
--- Storage policies: public read, auth write
-create policy "Public read dish-images" on storage.objects for select using (bucket_id = 'dish-images');
-create policy "Public read gallery" on storage.objects for select using (bucket_id = 'gallery');
-create policy "Public read assets" on storage.objects for select using (bucket_id = 'assets');
+-- RLS Enablement
+alter table categories enable row level security;
+alter table dishes enable row level security;
+alter table gallery_items enable row level security;
+alter table site_settings enable row level security;
 
-create policy "Auth write dish-images" on storage.objects for insert with check (auth.uid() is not null and bucket_id = 'dish-images');
-create policy "Auth write gallery" on storage.objects for insert with check (auth.uid() is not null and bucket_id = 'gallery');
-create policy "Auth write assets" on storage.objects for insert with check (auth.uid() is not null and bucket_id = 'assets');
+-- Policies
 
-create policy "Auth delete dish-images" on storage.objects for delete using (auth.uid() is not null and bucket_id = 'dish-images');
-create policy "Auth delete gallery" on storage.objects for delete using (auth.uid() is not null and bucket_id = 'gallery');
-create policy "Auth delete assets" on storage.objects for delete using (auth.uid() is not null and bucket_id = 'assets');
+-- Categories
+drop policy if exists "Public read categories" on categories;
+create policy "Public read categories" on categories for select using (true);
+
+drop policy if exists "Admin all categories" on categories;
+create policy "Admin all categories" on categories for all using (auth.role() = 'authenticated');
+
+-- Dishes
+drop policy if exists "Public read dishes" on dishes;
+create policy "Public read dishes" on dishes for select using (true);
+
+drop policy if exists "Admin all dishes" on dishes;
+create policy "Admin all dishes" on dishes for all using (auth.role() = 'authenticated');
+
+-- Gallery Items
+drop policy if exists "Public read gallery_items" on gallery_items;
+create policy "Public read gallery_items" on gallery_items for select using (true);
+
+drop policy if exists "Admin all gallery_items" on gallery_items;
+create policy "Admin all gallery_items" on gallery_items for all using (auth.role() = 'authenticated');
+
+-- Site Settings
+drop policy if exists "Public read settings" on site_settings;
+create policy "Public read settings" on site_settings for select using (true);
+
+drop policy if exists "Admin all settings" on site_settings;
+create policy "Admin all settings" on site_settings for all using (auth.role() = 'authenticated');
+
+-- Storage Policies
+-- Generic helper for all buckets used (simplifying for user)
+create policy "Public Access" on storage.objects for select using ( bucket_id in ('menu', 'assets', 'gallery', 'dish-images') );
+create policy "Admin Insert" on storage.objects for insert with check ( auth.role() = 'authenticated' );
+create policy "Admin Update" on storage.objects for update using ( auth.role() = 'authenticated' );
+create policy "Admin Delete" on storage.objects for delete using ( auth.role() = 'authenticated' );

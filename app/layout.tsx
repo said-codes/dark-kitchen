@@ -9,14 +9,14 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["600", "700"], variable: 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Cocina Oculta Curumaní | Arroz chino, almuerzos y más",
+  title: "Dark Kitchen Curumaní | Arroz chino, almuerzos y más",
   description: "Pedidos por WhatsApp. Arroz chino, almuerzos, desayunos, yogurt casero y suero en Curumaní, Cesar.",
   openGraph: {
-    title: "Cocina Oculta Curumaní",
+    title: "Dark Kitchen Curumaní",
     description: "Pedidos por WhatsApp. Arroz chino, almuerzos, desayunos, yogurt casero y suero.",
     type: "website",
     locale: "es_CO",
-    siteName: "Cocina Oculta Curumaní"
+    siteName: "Dark Kitchen Curumaní"
   },
   robots: {
     index: true,
@@ -27,9 +27,10 @@ export const metadata: Metadata = {
 const schema = {
   "@context": "https://schema.org",
   "@type": "Restaurant",
-  name: "Cocina Oculta Curumaní",
+  name: "Dark Kitchen Curumaní",
   address: {
     "@type": "PostalAddress",
+    streetAddress: "Cra. 17 # 9A-68",
     addressLocality: "Curumaní",
     addressRegion: "Cesar",
     addressCountry: "CO"

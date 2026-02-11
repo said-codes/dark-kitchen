@@ -18,12 +18,11 @@ export default function Page() {
         <section className="mx-auto max-w-6xl px-4">
           <iframe
             title="Mapa Curumaní"
-            src="https://www.google.com/maps?q=Curuman%C3%AD%2C%20Cesar&output=embed"
-            className="h-80 w-full rounded-2xl"
+            src="https://www.google.com/maps?q=Cra.+17+%23+9A-68%2C+Curuman%C3%AD%2C+Cesar&output=embed"
+            className="h-96 w-full rounded-2xl shadow-lg"
             loading="lazy"
           />
         </section>
-        <BusinessHours />
         <Footer />
       </div>
     </main>

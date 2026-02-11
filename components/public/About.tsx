@@ -14,7 +14,7 @@ export default function About() {
       <div className="grid gap-6 sm:grid-cols-2">
         <div>
           <h2 className="text-2xl font-bold">Sobre Nosotros</h2>
-          <p className="mt-2 text-neutral-700">Cocina oculta en Curumaní con enfoque en comida deliciosa y honesta.</p>
+          <p className="mt-2 text-neutral-700">Dark Kitchen en Curumaní con enfoque en comida deliciosa y honesta.</p>
         </div>
         <div className="space-y-4">
           {steps.map((s, i) => (
